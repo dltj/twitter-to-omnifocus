@@ -1,0 +1,130 @@
+#!/usr/bin/perl
+#
+use strict;
+use Net::Twitter::Lite;
+use File::Glob ':glob';
+use Mac::AppleScript qw(RunAppleScript);
+
+my $VERSION = 0.1;
+
+
+## Find configuration file (defaults to 'tweettoOmniFocus.cfg' in current directory)
+## and parse it
+my $config_file = 'tweettoOmniFocus.cfg';
+if ($ARGV[0]) {
+  $config_file = $ARGV[0];
+} elsif (-e bsd_glob('~',GLOB_TILDE | GLOB_ERR).'/.tweettoOmniFocus') {
+  $config_file = bsd_glob('~',GLOB_TILDE | GLOB_ERR).'/.tweettoOmniFocus';
+}
+open(C,$config_file) || die("$0: Unable to load config file ($config_file): $!\n");
+my %config = ();
+while (<C>) {
+  chomp;
+  next if /^#/ || /^$/;
+  my ($key,$value) = split(/\s+/,$_,2);
+  $config{$key} = $value;
+}
+close(C);
+
+
+## Set reasonable defaults for no existent parameters,
+## and die with error message if a required parameter is missing
+$config{last_tweet} = 1 if !defined $config{last_tweet};
+die("$0: No Twitter Consumer Key (consumer_key) defined in configuration file\n") if !defined $config{consumer_key};
+die("$0: No Twitter Consumer Secret (consumer_secret) defined in configuration file\n") if !defined $config{consumer_secret};
+
+
+## Use the consumer key and the consumer secret -- created at http://dev.twitter.com/apps --
+## to initialize a Net::Twitter::Lite object.
+my %twitter_args;
+$twitter_args{consumer_key} = $config{consumer_key};
+$twitter_args{consumer_secret} = $config{consumer_secret};
+my $twitter_obj = Net::Twitter::Lite->new(%twitter_args);
+
+
+## If the configuration file has access tokens, set them in the twitter object
+if ($config{access_token} && $config{access_token_secret}) {
+    $twitter_obj->access_token($config{access_token});
+    $twitter_obj->access_token_secret($config{access_token_secret});
+}
+
+
+## If we don't have valid access tokens, we'll need to prompt the user for them
+unless ( $twitter_obj->authorized ) {
+    # The client is not yet authorized: Do it now
+    print "Authorize this app at ", $twitter_obj->get_authorization_url, " and enter the PIN#\n";
+
+    my $pin = <STDIN>; # wait for input
+    chomp $pin;
+
+    my($access_token, $access_token_secret, $user_id, $screen_name) =
+        $twitter_obj->request_access_token(verifier => $pin);
+	  $config{access_token} = $access_token;
+	  $config{access_token_secret} = $access_token_secret;
+}
+
+
+## Get the tweets from the user timeline since the last recorded tweet
+my $timeline = $twitter_obj->home_timeline({since_id=>$config{last_tweet}});
+die "$@\n" if $@;
+my @tweetsForInbox;
+if ($timeline && @$timeline > 0) {
+  foreach my $tweet (reverse @$timeline) {
+    print $tweet->{'id'}."\t".$tweet->{'text'}."\n";
+    my $asCommand = "tell application \"OmniFocus\" to tell default document\nparse tasks with transport text (\"$tweet->{text}\") without as single task\nend tell";
+	RunAppleScript($asCommand) or die "$0: AppleScript Failed ($@)\n";
+    $config{last_tweet} = $tweet->{'id'};
+  }
+}
+
+
+## We write the config file last so as not to lose tweets in case of errors in the AppleScript 
+## routines above.  'last_tweet' will remain unchanged in the configuration file, and we'll pick
+## where the last good configuration run was completed.
+open(C,">$config_file") || die("$0: Unable to open config file for writing ($config_file): $!\n");
+foreach my $item (keys %config) {
+	print C "$item\t$config{$item}\n";
+}
+close(C);
+
+__END__
+
+=head1 NAME
+
+twitter-to-omnifocus - Read the home timeline of a Twitter user and add the
+text of any tweets found there to the OmniFocus inbox
+
+=head1 SYNOPSIS
+
+    twitter-to-omnifocus [ configuration_file ]
+
+=head1 DESCRIPTION
+
+This application pulls the home timeline of the user corresponding to the consumer key
+specified in the configuraiton file and adds the text of tweets found there to the OmniFocus
+inbox using AppleScript.
+
+=head1 CONFIGURATION FILE
+
+This script looks for a configuration file specified as the first argument of 
+the script, as C<.tweettoOmniFocus.cfg> in the home directory, or as C<tweettoOmniFocus.cfg>
+in the current working directory (in that order).
+
+The file consists of configuration directives as key-value pairs separated by white space. The
+configuration file is rewritten at each execution to include additional values (such as the
+identifier of the last tweet noticed in the home timeline) necessary for the program to run.
+This configuration file must have two lines in it that represent the Consumer Key and Consumer
+Secret that you get when you register the application at L<http://dev.twitter.com/apps>.
+
+    consumer_key      abc123abc123abc123
+    consumer_secret   789xyz789xyz789xyz789xyz
+
+The first time the application runs, you will be prompted to authorize this application 
+with Twitter and enter a PIN number.  When you do that, two other values -- C<access_token> and
+C<access_token_secret> -- will be written to the configuration file.
+
+=head1 AUTHOR
+
+Peter Murray L<http://dltj.org/tag/twitter-to-omnifocus>
+
+=cut

@@ -1,0 +1,38 @@
+.h1 twitter-to-omnifocus
+
+Read the home timeline of a Twitter user and add
+the text of any tweets found there to the OmniFocus inbox
+
+.h2 SYNOPSIS
+<pre>twitter-to-omnifocus [ configuration_file ]</pre>
+
+.h2 DESCRIPTION
+This application pulls the home timeline of the user corresponding to
+the consumer key specified in the configuraiton file and adds the text
+of tweets found there to the OmniFocus inbox using AppleScript.
+
+.h2 CONFIGURATION FILE
+This script looks for a configuration file specified as the first
+argument of the script, as ".tweettoOmniFocus.cfg" in the home
+directory, or as "tweettoOmniFocus.cfg" in the current working directory
+(in that order).
+
+The file consists of configuration directives as key-value pairs
+separated by white space. The configuration file is rewritten at each
+execution to include additional values (such as the identifier of the
+last tweet noticed in the home timeline) necessary for the program to
+run. This configuration file must have two lines in it that represent
+the Consumer Key and Consumer Secret that you get when you register the
+application at <http://dev.twitter.com/apps>.
+
+<pre>    consumer_key      abc123abc123abc123
+    consumer_secret   789xyz789xyz789xyz789xyz</pre>
+
+The first time the application runs, you will be prompted to authorize
+this application with Twitter and enter a PIN number. When you do that,
+two other values -- "access_token" and "access_token_secret" -- will be
+written to the configuration file.
+
+.h2 AUTHOR
+Peter Murray <http://dltj.org/tag/twitter-to-omnifocus>
+

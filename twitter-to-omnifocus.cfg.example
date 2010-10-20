@@ -1,0 +1,4 @@
+# This application will need to be registered with Twitter at http://dev.twitter.com/apps
+# When that is done, replace the dummy values below with the ones from Twitter.
+consumer_key      abc123abc123abc123
+consumer_secret   789xyz789xyz789xyz789xyz

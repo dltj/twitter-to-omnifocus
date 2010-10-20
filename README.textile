@@ -23,5 +23,5 @@ The first time the application runs, you will be prompted to authorize this appl
 
 h2. AUTHOR
 
-Peter Murray, "application information":http://dltj.org/tag/twitter-to-omnifocus>
+Peter Murray, "application information":http://dltj.org/tag/twitter-to-omnifocus
 

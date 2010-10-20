@@ -7,14 +7,13 @@ use Mac::AppleScript qw(RunAppleScript);
 
 my $VERSION = 0.1;
 
-
 ## Find configuration file (defaults to 'tweettoOmniFocus.cfg' in current directory)
 ## and parse it
 my $config_file = 'tweettoOmniFocus.cfg';
 if ($ARGV[0]) {
   $config_file = $ARGV[0];
-} elsif (-e bsd_glob('~',GLOB_TILDE | GLOB_ERR).'/.tweettoOmniFocus') {
-  $config_file = bsd_glob('~',GLOB_TILDE | GLOB_ERR).'/.tweettoOmniFocus';
+} elsif (-e bsd_glob('~',GLOB_TILDE | GLOB_ERR).'/.tweettoOmniFocus.cfg') {
+  $config_file = bsd_glob('~',GLOB_TILDE | GLOB_ERR).'/.tweettoOmniFocus.cfg';
 }
 open(C,$config_file) || die("$0: Unable to load config file ($config_file): $!\n");
 my %config = ();
